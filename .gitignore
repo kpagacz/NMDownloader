@@ -1,5 +1,6 @@
 # My virtual environment
 venv/
+*__pycache__/*
 
 # My files
 api_key.txt
