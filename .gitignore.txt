@@ -1,0 +1,3 @@
+.git
+.idea
+api_key.txt
