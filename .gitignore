@@ -1,4 +1,4 @@
-# My virtual environment
+﻿# My virtual environment
 venv/
 *__pycache__/*
 
