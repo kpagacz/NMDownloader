@@ -24,6 +24,9 @@
 
 """Module containing the tools for downloading mods from Nexus Mods."""
 
+import json
+import os
+import typing
 import requests
 import utils.authorization as authorization
 
@@ -32,8 +35,11 @@ class NexusInterface:
     """Interacts with NexusMods.
     This class is responsible for interactions with Nexus Mods site.
 
-    Args:
+    Attributes:
         authenticator: an instance of Authenticator class with a loaded API key
+
+    Examples:
+
     """
 
     def __init__(self,
@@ -42,19 +48,43 @@ class NexusInterface:
 
     def authenticate(self) -> requests.Response:
         """Function, which sends a validation request to the API.
+        It check whether the key is valid and also update the information
+        about the user (premium or not, saves api_key, etc.
 
         Returns:
             requests.Response with the response from the API
         """
+        # Setting the required headers
         headers = {
             "key": self.authenticator.api_key,
             "accept": "application/json"
         }
 
+        # Getting the response from Nexus
         query = NexusQuery(query_type=requests.get,
                            headers=headers)
         response = query.query("users/validate.json")
 
+        # Checking whether HTTP error occurred
+        # Checking whether the response is a response containing the information
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as error:
+            print("Http error occurred: {}. Connection issues/"
+                  " or wrond api key.".format(error))
+            return requests.Response
+
+        if response.status_code != 200:
+            print("Error occurred during authentication.")
+            return requests.Response
+
+        # Saving the body of the response to a profile file
+        # Body should contain the information about the user
+        decoded = response.json()
+        file_name = "profile/user_profile.json"
+        os.makedirs(os.path.dirname(file_name), exist_ok=True)
+        with open(file_name, mode="w") as write_file:
+            json.dump(obj=decoded)
 
         return response
 
@@ -64,11 +94,13 @@ class NexusQuery:
     This class is responsible for handling API queries to Nexus
     Mods site.
 
-    Args:
-        url (str): string of a url to request. Must be a complete address
-        query_type (request): a request function, like requests.get or requests.post
-        params (dict): a dict of parameters:values passed to request
-        headers (dict) a dict of headers:values passed to request
+    Attributes:
+        url (optional): string of a url to request. Must be a complete address
+        query_type (optional): a request function, like requests.get or requests.post
+        params (optional): a dict of parameters:values passed to request
+        headers (optional): a dict of headers:values passed to request
+        _base_url (str): defines the base of the base URL of the API,
+            defaults to "https://api.nexusmods.com/v1/".
 
     Returns:
         request.Response
@@ -78,18 +110,19 @@ class NexusQuery:
     """
 
     def __init__(self,
-                 url=None
-                 query_type=None,
+                 url: str = None,
+                 query_type: typing.Union[requests.get,
+                                          requests.post] = None,
                  params: dict = None,
                  headers: dict = None):
-        self._url = url
-        self._query_type = query_type
-        self._params = params
-        self._headers = headers
+        self.url = url
+        self.query_type = query_type
+        self.params = params
+        self.headers = headers
         self._base_url = "https://api.nexusmods.com/v1/"
 
     def query(self,
-              url: str = self._url,
+              url: str = None,
               params: dict = None,
               headers: dict = None) -> requests.Response:
         """Sends requests to Nexus API.
@@ -108,30 +141,78 @@ class NexusQuery:
         Raises:
             """
         if params is None:
-            params = self._params
+            params = self.params
         if headers is None:
             headers = self._headers
         if url is None:
+            url = self.url
+        else:
             url = self._base_url + url
 
         try:
             with self._query_type(url,
                                   params=params,
                                   headers=headers,
-                                  timeout=0.5) as r:
-                return r
-        except requests.exceptions.ConnectionError as e:
-            print("Connection error occurred: {}.".format(e))
+                                  timeout=0.5) as response:
+                return response
+        except requests.exceptions.ConnectionError as error:
+            print("Connection error occurred: {}.".format(error))
             return requests.Response()
-        except requests.exceptions.Timeout as e:
-            print("Connection timed out: {}.".format(e))
+        except requests.exceptions.Timeout as error:
+            print("Connection timed out: {}.".format(error))
             return requests.Response()
-        except requests.exceptions.TooManyRedirects as e:
-            print("Too many redirects: {}".format(e))
+        except requests.exceptions.TooManyRedirects as error:
+            print("Too many redirects: {}".format(error))
             return requests.Response()
-        except requests.exceptions.HTTPError as e:
-            print("An HTTP error occurred: {}.".format(e))
+        except requests.exceptions.HTTPError as error:
+            print("An HTTP error occurred: {}.".format(error))
             return requests.Response()
-        except requests.exceptions.URLRequired as e:
-            print("Please specify the URL: {}.".format(e))
+        except requests.exceptions.URLRequired as error:
+            print("Please specify the URL: {}.".format(error))
             return requests.Response()
+
+
+class ModFileQuery(NexusQuery):
+    """Generates requests about mod files to Nexus API.
+    Inherits from ``NexusQuery``.
+
+    Attributes:
+        url (optional): string of a url to request. Must be a complete address
+        game_domain (optional): specifies the game, which is modded by the requested mod
+        mod_id (optional): specifies the mod id as set by Nexus Mods
+        file_id (optional): specifies the file id
+        query_type (optional): a request function, like requests.get or requests.post
+        params (dict): a dict of parameters:values passed to request
+        headers (dict) a dict of headers:values passed to request
+
+    Returns:
+        request.Response object
+
+    Examples:
+
+    """
+    def __init__(self,
+                 url: str = None,
+                 game_domain: str = None,
+                 mod_id: int = None,
+                 file_id: int = None,
+                 query_type=requests.get,
+                 params: dict = None,
+                 headers: dict = None):
+        super.__init__(url, query_type, params, headers)
+        self.game_domain = game_domain
+        self.mod_id = mod_id
+        self.file_id = file_id
+
+    def list_files(self,
+                   game_domain: str = None,
+                   mod_id: int = None) -> requests.:
+
+        if game_domain is None:
+            game_domain = self.game_domain
+        if mod_id is None:
+            mod_id = self.mod_id
+
+
+
+
