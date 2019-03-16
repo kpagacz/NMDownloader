@@ -95,6 +95,8 @@ def download_with_progress_bar(url: str,
                               desc=file_name):
             output_file.write(data)
 
+    # return True
+
 def get_mod_name_from_url(url: str) -> str:
     """Extracts the file name from the url.
 
