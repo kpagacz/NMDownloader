@@ -83,7 +83,7 @@ class NexusInterface:
         decoded = response.json()
         file_name = "profile/user_profile.json"
         os.makedirs(os.path.dirname(file_name), exist_ok=True)
-        with open(file_name, mode="w") as write_file:
+        with open(file_name, mode="wb") as write_file:
             json.dump(obj=decoded)
 
         return response
