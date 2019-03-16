@@ -1,8 +1,8 @@
-﻿#-*- coding = utf-8 *-*
+﻿# -*- coding = utf-8 *-*
 
-#MIT License
+# MIT License
 #
-#Copyright (c) 2019 Konrad Pagacz
+# Copyright (c) 2019 Konrad Pagacz
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,18 +25,19 @@
 """Module containing the tools for downloading mods from Nexus Mods."""
 
 import requests
-import authorization
+import utils.authorization as authorization
 
 
 class NexusInterface:
     """Interacts with NexusMods.
-    This class is responsible for all interactions with Nexus Mods site.
+    This class is responsible for interactions with Nexus Mods site.
 
     Args:
         authenticator: an instance of Authenticator class with a loaded API key
     """
+
     def __init__(self,
-                 authenticator: authorization.Authenticator = None)
+                 authenticator: authorization.Authenticator = None):
         self.authenticator = authenticator
 
     def authenticate(self) -> requests.Response:
@@ -46,18 +47,16 @@ class NexusInterface:
             requests.Response with the response from the API
         """
         headers = {
-            "key" : self.authenticator.api_key,
-            "accept" : "application/json"
+            "key": self.authenticator.api_key,
+            "accept": "application/json"
         }
 
         query = NexusQuery(query_type=requests.get,
                            headers=headers)
         response = query.query("users/validate.json")
 
-        if response.status_code != 200
-            return None
-        else:
-            return response
+
+        return response
 
 
 class NexusQuery:
@@ -66,37 +65,39 @@ class NexusQuery:
     Mods site.
 
     Args:
+        url (str): string of a url to request. Must be a complete address
         query_type (request): a request function, like requests.get or requests.post
-        game: str object defining the game on Nexus mods site.
-            Can be: 'skyrim', etc.
-        *args: additional positional arguments to request function
-        **kwargs: additional keyword arguments sent to request function
+        params (dict): a dict of parameters:values passed to request
+        headers (dict) a dict of headers:values passed to request
 
     Returns:
-        a parsed response object
+        request.Response
 
     Examples:
 
     """
+
     def __init__(self,
-                 query_type = None,
-                 params : dict = None,
+                 url=None
+                 query_type=None,
+                 params: dict = None,
                  headers: dict = None):
+        self._url = url
         self._query_type = query_type
         self._params = params
         self._headers = headers
         self._base_url = "https://api.nexusmods.com/v1/"
 
     def query(self,
-                   url: str,
-                   params: dict = None,
-                   headers: dict = None):
+              url: str = self._url,
+              params: dict = None,
+              headers: dict = None) -> requests.Response:
         """Sends requests to Nexus API.
         Args:
-            url: a full url sent to Nexus API via requests functions
-            params(optional): parameters to requests, default is declared during
+            url (str, optional): a full url sent to Nexus API via requests functions
+            params(dict, optional): parameters to requests, default is declared during
                 the initialization of the class
-            headers(optional): headers to requests, default is declared during
+            headers(dict, optional): headers to requests, default is declared during
                 the initialization of the class
 
         Returns:
@@ -104,35 +105,32 @@ class NexusQuery:
 
         Examples:
 
-
         Raises:
-            requests.exceptions.ConnectionError
-            requests.exceptions.Timeour
-            requests.exceptions.TooManyRedirects
             """
         if params is None:
             params = self._params
         if headers is None:
             headers = self._headers
-        url = self._base_url + url
+        if url is None:
+            url = self._base_url + url
 
         try:
             with self._query_type(url,
-                                  params = params,
-                                  headers = headers,
-                                  timeout = 0.5) as r:
+                                  params=params,
+                                  headers=headers,
+                                  timeout=0.5) as r:
                 return r
         except requests.exceptions.ConnectionError as e:
-            print("Connection error occured: {}.".format(e))
+            print("Connection error occurred: {}.".format(e))
             return requests.Response()
         except requests.exceptions.Timeout as e:
             print("Connection timed out: {}.".format(e))
             return requests.Response()
         except requests.exceptions.TooManyRedirects as e:
-            print("Too many redirections: {}".format(e))
+            print("Too many redirects: {}".format(e))
             return requests.Response()
         except requests.exceptions.HTTPError as e:
-            print("An HTTP error occured: {}.".format(e))
+            print("An HTTP error occurred: {}.".format(e))
             return requests.Response()
         except requests.exceptions.URLRequired as e:
             print("Please specify the URL: {}.".format(e))

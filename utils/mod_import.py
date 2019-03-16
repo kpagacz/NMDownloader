@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-#MIT License
+# MIT License
 #
-#Copyright (c) 2019 Konrad Pagacz
+# Copyright (c) 2019 Konrad Pagacz
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,10 +27,12 @@ mod ids and mod names.
 import csv
 import openpyxl
 
+
 class ModListImporter:
     """A class responsible for importing mod lists.
     This class imports mod lists from files and from other sources.
     """
+
     def __init__(self, mod_list: list = None):
         """Constructor method of ModListImporter.
         """
@@ -55,7 +57,7 @@ class ModListImporter:
         modid_array = []
 
         with open(file_name, newline="") as csvfile:
-            # Recognizes the dialect of the file and whethet it has headers
+            # Recognizes the dialect of the file and whether it has headers
             dialect = csv.Sniffer().sniff(csvfile.readline())
             csvfile.seek(0)
             has_headers = csv.Sniffer().has_header(csvfile.read(1024))
