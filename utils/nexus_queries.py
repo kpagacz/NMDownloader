@@ -206,13 +206,79 @@ class ModFileQuery(NexusQuery):
 
     def list_files(self,
                    game_domain: str = None,
-                   mod_id: int = None) -> requests.:
+                   mod_id: int = None,
+                   params: dict = None,
+                   headers: dict = None) -> requests.Response:
+        """Requests list of files for a specified mod.
+        Game has to be specified by ``game_domain`` and mod by ``mod_id``.
 
+        Args:
+            game_domain: a domain of the game the mod is modifying. Example: "skyrim"
+            mod_id: Nexus Mods mod id
+            params: dictionary of parameters:values to pass to requests
+            headers: dictionary of headers:values to pass to requests
+
+        Returns:
+            requests.Response
+
+        Examples:
+
+        """
+        # Assigning the values from __init__ if not specified in the call
         if game_domain is None:
             game_domain = self.game_domain
         if mod_id is None:
             mod_id = self.mod_id
+        if params is None:
+            params = self.params
+        if headers is None:
+            headers = self.headers
 
+        # Creating a URL request
+        self.url = ("games/{domain}/mods/{mod_id}/files.json".format(game_domain, mod_id))
 
+        # Executing the query
+        response: requests.Response = super.query(self.url, params, headers)
 
+        return response
 
+    def generateLink(self,
+                     game_domain: str = None,
+                     mod_id: int = None,
+                     file_id: int = None,
+                     params: dict = None,
+                     headers: dict = None) -> requests.Response:
+        """
+
+        Args:
+            game_domain: a domain of the game the mod is modifying. Example: "skyrim"
+            mod_id: Nexus Mods mod id
+            file_id: Nexus Mods file id
+            params: dictionary of parameters:values to pass to requests
+            headers: dictionary of headers:values to pass to requests
+
+        Returns:
+            requests.Response object
+        """
+        # Assigning the values from __init__ if not specified in the call
+        if game_domain is None:
+            game_domain = self.game_domain
+        if mod_id is None:
+            mod_id = self.mod_id
+        if file_id is None:
+            file_id = self.file_id
+        if params is None:
+            params = self.params
+        if headers is None:
+            headers = self.headers
+
+        # Creating a URL request
+        self.url = ("games/{domain}/mods/{mod_id}/files/{file_id}/download_link.json".format(game_domain,
+                                                                                             mod_id,
+                                                                                             file_id))
+
+        # Executing the query
+        response: requests.Response = super.query(self.url, params, headers)
+        assert isinstance(response, requests.Response), "response is not a requests.Response object"
+
+        return respone
