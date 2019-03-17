@@ -37,7 +37,7 @@ class Authenticator:
         """
         assert os.path.isfile(file_name), "{file_name} is not a valid path to a file"
 
-        with open(file_name, 'r') as file:
+        with open(file_name, 'rt', encoding="utf-8-sig") as file:
             key = file.read()
         return cls(key)
 

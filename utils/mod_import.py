@@ -31,6 +31,13 @@ import openpyxl
 class ModListImporter:
     """A class responsible for importing mod lists.
     This class imports mod lists from files and from other sources.
+
+    Methods:
+        from_csv
+        from_excel
+
+    Attributes:
+        mod_list: list of Nexus Mods mod ids
     """
 
     def __init__(self, mod_list: list = None):
@@ -72,7 +79,8 @@ class ModListImporter:
             for row in csv_reader:
                 modid_array.append(int(row[modid_column]))
 
-        assert isinstance(modid_array, (list, int)), "modid_array is not a list. Expected a list."
+        modid_array = list(modid_array)
+        assert isinstance(modid_array, list), "modid_array is not a list. Expected a list."
         return cls(modid_array)
 
     @classmethod
@@ -103,7 +111,8 @@ class ModListImporter:
         for row in sheet.rows:
             modid_array.append(row[modid_column].value)
 
-        assert isinstance(modid_array, (list, int))
+        modid_array = list(modid_array)
+        assert isinstance(modid_array, list)
         return cls(modid_array)
 
     @property

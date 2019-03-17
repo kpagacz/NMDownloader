@@ -141,5 +141,3 @@ def open_browser_from_links(links: Union[str, List[str]]):
 
     for link in links:
         webbrowser.get().open(link)
-
-n = NexusBrowser().open_download_links(links="https://www.nexusmods.com/Core/Libs/Common/Widgets/DownloadPopUp?id=1000172397&game_id=110&source=FileExpander")

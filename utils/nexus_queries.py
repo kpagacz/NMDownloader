@@ -24,69 +24,8 @@
 
 """Module containing the tools for downloading mods from Nexus Mods."""
 
-import json
-import os
 import typing
 import requests
-import utils.authorization as authorization
-
-
-class NexusInterface:
-    """Interacts with NexusMods.
-    This class is responsible for interactions with Nexus Mods site.
-
-    Attributes:
-        authenticator: an instance of Authenticator class with a loaded API key
-
-    Examples:
-
-    """
-
-    def __init__(self,
-                 authenticator: authorization.Authenticator = None):
-        self.authenticator = authenticator
-
-    def authenticate(self) -> requests.Response:
-        """Function, which sends a validation request to the API.
-        It check whether the key is valid and also update the information
-        about the user (premium or not, saves api_key, etc.
-
-        Returns:
-            requests.Response with the response from the API
-        """
-        # Setting the required headers
-        headers = {
-            "key": self.authenticator.api_key,
-            "accept": "application/json"
-        }
-
-        # Getting the response from Nexus
-        query = NexusQuery(query_type=requests.get,
-                           headers=headers)
-        response = query.query("users/validate.json")
-
-        # Checking whether HTTP error occurred
-        # Checking whether the response is a response containing the information
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as error:
-            print("Http error occurred: {}. Connection issues/"
-                  " or wrond api key.".format(error))
-            return requests.Response
-
-        if response.status_code != 200:
-            print("Error occurred during authentication.")
-            return requests.Response
-
-        # Saving the body of the response to a profile file
-        # Body should contain the information about the user
-        decoded = response.json()
-        file_name = "profile/user_profile.json"
-        os.makedirs(os.path.dirname(file_name), exist_ok=True)
-        with open(file_name, mode="wb") as write_file:
-            json.dump(obj=decoded)
-
-        return response
 
 
 class NexusQuery:
@@ -143,17 +82,23 @@ class NexusQuery:
         if params is None:
             params = self.params
         if headers is None:
-            headers = self._headers
+            headers = self.headers
         if url is None:
             url = self.url
         else:
             url = self._base_url + url
 
+        # Make sure headers include the API key and accept json
+        assert "apikey" in headers.keys(), "API key is not provided in headers {}." \
+                                           "Make sure headers include 'apikey'.".format(headers)
+        assert "accept" in headers.keys(), "accept not included in headers {}." \
+                                           "Make sure headers include 'accept'.".format(headers)
+
         try:
-            with self._query_type(url,
-                                  params=params,
-                                  headers=headers,
-                                  timeout=0.5) as response:
+            with self.query_type(url,
+                                 params=params,
+                                 headers=headers,
+                                 timeout=5) as response:
                 return response
         except requests.exceptions.ConnectionError as error:
             print("Connection error occurred: {}.".format(error))
@@ -185,6 +130,10 @@ class ModFileQuery(NexusQuery):
         params (dict): a dict of parameters:values passed to request
         headers (dict) a dict of headers:values passed to request
 
+    Methods:
+        list_files: lists files for a specified mod
+        generate_link: generates a download link using the Nexus API
+
     Returns:
         request.Response object
 
@@ -199,14 +148,14 @@ class ModFileQuery(NexusQuery):
                  query_type=requests.get,
                  params: dict = None,
                  headers: dict = None):
-        super.__init__(url, query_type, params, headers)
+        super(ModFileQuery, self).__init__(url, query_type, params, headers)
         self.game_domain = game_domain
         self.mod_id = mod_id
         self.file_id = file_id
 
     def list_files(self,
                    game_domain: str = None,
-                   mod_id: int = None,
+                   mod_id: typing.Union[int, typing.List[int]] = None,
                    params: dict = None,
                    headers: dict = None) -> requests.Response:
         """Requests list of files for a specified mod.
@@ -235,19 +184,23 @@ class ModFileQuery(NexusQuery):
             headers = self.headers
 
         # Creating a URL request
-        self.url = ("games/{domain}/mods/{mod_id}/files.json".format(game_domain, mod_id))
+        self.url = ("games/{domain}/mods/{mod_id}/files.json".format(domain=game_domain,
+                                                                     mod_id=mod_id))
 
+        print(self.url, params, headers)
         # Executing the query
-        response: requests.Response = super.query(self.url, params, headers)
+        response: requests.Response = super(ModFileQuery, self).query(self.url,
+                                                                      params=params,
+                                                                      headers=headers)
 
         return response
 
-    def generateLink(self,
-                     game_domain: str = None,
-                     mod_id: int = None,
-                     file_id: int = None,
-                     params: dict = None,
-                     headers: dict = None) -> requests.Response:
+    def generate_link(self,
+                      game_domain: str = None,
+                      mod_id: int = None,
+                      file_id: int = None,
+                      params: dict = None,
+                      headers: dict = None) -> requests.Response:
         """
 
         Args:
@@ -273,12 +226,57 @@ class ModFileQuery(NexusQuery):
             headers = self.headers
 
         # Creating a URL request
-        self.url = ("games/{domain}/mods/{mod_id}/files/{file_id}/download_link.json".format(game_domain,
-                                                                                             mod_id,
-                                                                                             file_id))
+        self.url = ("games/{domain}/mods/{mod_id}/files/{file_id}/"
+                    "download_link.json".format(domain=game_domain,
+                                                mod_id=mod_id,
+                                                file_id=file_id))
 
         # Executing the query
-        response: requests.Response = super.query(self.url, params, headers)
-        assert isinstance(response, requests.Response), "response is not a requests.Response object"
+        response: requests.Response = super(ModFileQuery, self).query(self.url,
+                                                                      params=params,
+                                                                      headers=headers)
+        assert isinstance(response, requests.Response), "response is not a " \
+                                                        "requests.Response object."
 
-        return respone
+        return response
+
+    def generate_mod_info(self,
+                          mod_id: typing.Union[int, typing.List[int]],
+                          game_domain: str = None,
+                          params: dict = None,
+                          headers: dict = None) -> typing.List[requests.Response]:
+        """Attempts to get information about a specified mod.
+        Attempts to download information about a mod specified by mod_id via
+        a HTTP GET request.
+
+        Args:
+            game_domain: game domain specified by Nexus Mods site. Example: "skyrim"
+            mod_id: mod id specified by Nexus Mods site
+            params: parameters passed to GET request
+            headers: headers passed to GET request
+
+        Returns:
+            requests.Response
+        """
+        if game_domain is None:
+            game_domain = self.game_domain
+        if params is None:
+            params = self.params
+        if headers is None:
+            headers = self.headers
+
+        response_list = []
+        for single_id in mod_id:
+            # Creating a URL request
+            self.url = "games/{game_domain}/mods/{mod_id}.json".format(game_domain=game_domain,
+                                                                       mod_id=single_id)
+
+            # Executing the query
+            response: requests.Response = super(ModFileQuery, self).query(self.url,
+                                                                          params=params,
+                                                                          headers=headers)
+            assert isinstance(response, requests.Response), "response is not" \
+                                                           "a requests.Response object."
+            response_list.append(response)
+
+        return response_list
