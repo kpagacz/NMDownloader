@@ -5,6 +5,7 @@ venv/
 # My files
 api_key.txt
 mod_downloads/
+profile/
 
 # PyCharm files
 .idea/

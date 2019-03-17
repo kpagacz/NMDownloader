@@ -88,7 +88,7 @@ def download_with_progress_bar(url: str,
 
     # File download
     with open(write_folder + file_name, "wb") as output_file:
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=5)
         chunk_size = 1024*1024
         for data in tqdm.tqdm(response.iter_content(chunk_size=chunk_size),
                               unit="MB",
