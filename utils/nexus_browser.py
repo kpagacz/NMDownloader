@@ -70,7 +70,7 @@ class NexusBrowser:
             domain_name: domain name of the game in Nexus Mods
 
         Returns:
-            List of
+            List of links
 
         Examples:
 
@@ -111,7 +111,8 @@ class NexusBrowser:
                                                                     self.domain_name)
 
         # Attempts to open the default user's browser with submitted links
-        open_browser_from_links(links)
+        for link in links:
+            webbrowser.get().open(link)
 
     def browser_download(self):
         """Streamlines the process of downloading files from the Nexus Mods.
@@ -127,17 +128,3 @@ class NexusBrowser:
         self.open_download_links()
 
 
-def open_browser_from_links(links: Union[str, List[str]]):
-    """Attempts to open the user's default browser with a submitted list of links.
-
-    Args:
-        links: list of links to open
-
-    Returns:
-        None
-    """
-    if isinstance(links, str):
-        links = [links]
-
-    for link in links:
-        webbrowser.get().open(link)
