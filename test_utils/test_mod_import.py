@@ -1,6 +1,8 @@
 ﻿import unittest
 import utils.mod_import as mod_import
 
+import codecov
+
 
 class ModListImporterTestCase(unittest.TestCase):
     def setUp(self):

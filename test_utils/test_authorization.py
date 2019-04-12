@@ -3,6 +3,10 @@ from unittest import mock
 import sys
 import os
 import utils.authorization as authorization
+
+import codecov
+
+
 sys.path.insert(0, os.path.abspath(".."))
 
 
