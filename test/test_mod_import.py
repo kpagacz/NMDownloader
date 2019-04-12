@@ -30,14 +30,14 @@ class ModListImporterTestCase(unittest.TestCase):
 
 
     def testImportFromCSVWithHeader(self):
-        cls = self.importer.from_csv("test_utils/testModImporterFromCSV.csv")
+        cls = self.importer.from_csv("test/testModImporterFromCSV.csv")
         self.assertIsInstance(cls, mod_import.ModListImporter)
         self.assertEqual([1, 2],
                          cls.mod_list,
                          msg="ModImporter succesfully created, but mod_list is incorrect.")
 
     def testImportFromExcel(self):
-        cls = self.importer.from_excel("test_utils/testModImporterFromExcel.xlsx")
+        cls = self.importer.from_excel("test/testModImporterFromExcel.xlsx")
         self.assertIsInstance(cls, mod_import.ModListImporter)
         self.assertEqual([1, 2],
                          cls.mod_list,
